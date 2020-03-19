@@ -13,7 +13,10 @@ type myLog struct {
 	logFileName string
 }
 
-var fileWriteMutex *sync.Mutex
+var (
+	fileWriteMutex *sync.Mutex
+	wg sync.WaitGroup
+)
 
 func NewMyLog(logFileName string) *myLog {
 	mylog := &myLog{
@@ -25,7 +28,9 @@ func NewMyLog(logFileName string) *myLog {
 
 func (self *myLog) Debug (s string) {
 	ct := currentTime()
+	wg.Add(1)
 	go func(){
+		defer wg.Done()
 		fileWriteMutex.Lock()
 		defer fileWriteMutex.Unlock()
 
@@ -40,11 +45,14 @@ func (self *myLog) Debug (s string) {
 			fmt.Println(err)
 		}
 	}()
+	wg.Wait()
 }
 
 func (self *myLog) Info (s string) {
 	ct := currentTime()
+	wg.Add(1)
 	go func(){
+		defer wg.Done()
 		fileWriteMutex.Lock()
 		defer fileWriteMutex.Unlock()
 
@@ -54,17 +62,19 @@ func (self *myLog) Info (s string) {
 		}
 		defer writer.Close()
 		logContent := ct + " [Info] \"" + s + "\"\n"
-		fmt.Println(logContent)
 		_, err = io.WriteString(writer, logContent)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}()
+	wg.Wait()
 }
 
 func (self *myLog) Warning (s string) {
 	ct := currentTime()
+	wg.Add(1)
 	go func(){
+		defer wg.Done()
 		fileWriteMutex.Lock()
 		defer fileWriteMutex.Unlock()
 
@@ -79,11 +89,14 @@ func (self *myLog) Warning (s string) {
 			fmt.Println(err)
 		}
 	}()
+	wg.Wait()
 }
 
 func (self *myLog) Error (s string) {
 	ct := currentTime()
+	wg.Add(1)
 	go func(){
+		defer wg.Done()
 		fileWriteMutex.Lock()
 		defer fileWriteMutex.Unlock()
 
@@ -98,6 +111,7 @@ func (self *myLog) Error (s string) {
 			fmt.Println(err)
 		}
 	}()
+	wg.Wait()
 }
 
 func currentTime() string {
