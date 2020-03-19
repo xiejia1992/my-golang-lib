@@ -26,91 +26,27 @@ func NewMyLog(logFileName string) *myLog {
 	return mylog
 }
 
-func (self *myLog) Debug (s string) {
-	ct := currentTime()
+func (self *myLog) Debug (message string) {
 	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		fileWriteMutex.Lock()
-		defer fileWriteMutex.Unlock()
-
-		writer, err := self.writer()
-		if err != nil {
-			return
-		}
-		defer writer.Close()
-		logContent := ct + " [Debug] \"" + s + "\"\n"
-		_, err = io.WriteString(writer, logContent)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	go self.writer("Debug", message)
 	wg.Wait()
 }
 
-func (self *myLog) Info (s string) {
-	ct := currentTime()
+func (self *myLog) Info (message string) {
 	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		fileWriteMutex.Lock()
-		defer fileWriteMutex.Unlock()
-
-		writer, err := self.writer()
-		if err != nil {
-			return
-		}
-		defer writer.Close()
-		logContent := ct + " [Info] \"" + s + "\"\n"
-		_, err = io.WriteString(writer, logContent)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	go self.writer("Info", message)
 	wg.Wait()
 }
 
-func (self *myLog) Warning (s string) {
-	ct := currentTime()
+func (self *myLog) Warning (message string) {
 	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		fileWriteMutex.Lock()
-		defer fileWriteMutex.Unlock()
-
-		writer, err := self.writer()
-		if err != nil {
-			return
-		}
-		defer writer.Close()
-		logContent := ct + " [Warning] \"" + s + "\"\n"
-		_, err = io.WriteString(writer, logContent)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	go self.writer("Warning", message)
 	wg.Wait()
 }
 
-func (self *myLog) Error (s string) {
-	ct := currentTime()
+func (self *myLog) Error (message string) {
 	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		fileWriteMutex.Lock()
-		defer fileWriteMutex.Unlock()
-
-		writer, err := self.writer()
-		if err != nil {
-			return
-		}
-		defer writer.Close()
-		logContent := ct + " [Error] \"" + s + "\"\n"
-		_, err = io.WriteString(writer, logContent)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	go self.writer("Error", message)
 	wg.Wait()
 }
 
@@ -119,10 +55,28 @@ func currentTime() string {
 	return timeStr
 }
 
-func (self *myLog) writer() (*os.File, error) {
-	writer, err := os.OpenFile(self.logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
+func (self *myLog) openFile() (*os.File, error) {
+	file, err := os.OpenFile(self.logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
 	}
-	return writer, err
+	return file, err
+}
+
+func (self *myLog) writer(level, message string) {
+	ct := currentTime()
+	defer wg.Done()
+	fileWriteMutex.Lock()
+	defer fileWriteMutex.Unlock()
+
+	file, err := self.openFile()
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	logContent := ct + " [" + level + "] \"" + message + "\"\n"
+	_, err = io.WriteString(file, logContent)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
